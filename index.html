@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Gym Log" />
+  <title>Gym Log</title>
+  <style>
+    :root {
+      --bg: #0f0f0f;
+      --surface: #1c1c1e;
+      --surface2: #2c2c2e;
+      --accent: #ff9f0a;
+      --accent2: #ff6b35;
+      --text: #f5f5f7;
+      --text2: #aeaeb2;
+      --border: #3a3a3c;
+      --danger: #ff453a;
+      --success: #32d74b;
+      --radius: 14px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+      min-height: 100vh;
+      padding-bottom: calc(80px + var(--safe-bottom));
+    }
+
+    /* ── NAV BAR ── */
+    .navbar {
+      position: sticky;
+      top: 0;
+      background: rgba(15,15,15,0.85);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      padding: calc(var(--safe-top) + 12px) 20px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 100;
+      border-bottom: 1px solid var(--border);
+    }
+    .navbar h1 {
+      font-size: 20px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── TAB BAR ── */
+    .tabbar {
+      position: fixed;
+      bottom: 0;
+      left: 0; right: 0;
+      background: rgba(15,15,15,0.92);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding-bottom: var(--safe-bottom);
+      z-index: 100;
+    }
+    .tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--text2);
+      padding: 10px 0 8px;
+      font-size: 10px;
+      font-weight: 500;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .tab-btn .icon { font-size: 22px; line-height: 1; }
+    .tab-btn.active { color: var(--accent); }
+
+    /* ── PAGES ── */
+    .page { display: none; padding: 20px; }
+    .page.active { display: block; }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .card-header {
+      padding: 14px 16px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── FORM ── */
+    .form-group {
+      padding: 0 16px 4px;
+    }
+    .form-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .form-row:last-child { border-bottom: none; }
+    .form-row label {
+      font-size: 16px;
+      color: var(--text);
+      flex: 0 0 90px;
+    }
+    .form-row input,
+    .form-row select {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 16px;
+      font-family: inherit;
+      text-align: right;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .form-row select option { background: #1c1c1e; }
+    .form-row input[type="number"]::-webkit-inner-spin-button { display: none; }
+
+    /* stepper for sets & weight */
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .stepper button {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: var(--surface2);
+      color: var(--accent);
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .stepper button:active { background: var(--border); }
+    .stepper .val {
+      min-width: 52px;
+      text-align: center;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* ── BUTTON ── */
+    .btn-primary {
+      width: 100%;
+      margin: 16px 0 4px;
+      padding: 16px;
+      border: none;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #000;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-primary:active { opacity: 0.85; transform: scale(0.98); }
+
+    .btn-danger {
+      background: none;
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: calc(90px + var(--safe-bottom));
+      left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--success);
+      color: #000;
+      padding: 12px 24px;
+      border-radius: 100px;
+      font-size: 15px;
+      font-weight: 600;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      pointer-events: none;
+      z-index: 200;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── LOG LIST ── */
+    .log-date-group { margin-bottom: 24px; }
+    .log-date-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+    .log-item {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .log-item-info { flex: 1; }
+    .log-item-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .log-item-meta {
+      font-size: 14px;
+      color: var(--text2);
+    }
+    .log-item-badge {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 6px 10px;
+      text-align: center;
+      min-width: 52px;
+    }
+    .log-item-badge .badge-val {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+      display: block;
+    }
+    .log-item-badge .badge-unit {
+      font-size: 10px;
+      color: var(--text2);
+      text-transform: uppercase;
+    }
+    .empty-state {
+      text-align: center;
+      color: var(--text2);
+      padding: 60px 20px;
+    }
+    .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 16px; }
+
+    /* ── STATS ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-val {
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+    .exercise-stat {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .exercise-stat:last-child { border-bottom: none; }
+    .ex-name { font-size: 15px; }
+    .ex-count { font-size: 14px; color: var(--accent); font-weight: 600; }
+
+    /* ── SETTINGS ── */
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-label { font-size: 16px; }
+    .settings-sub { font-size: 13px; color: var(--text2); margin-top: 2px; }
+    .toggle {
+      position: relative;
+      width: 51px; height: 31px;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: var(--surface2);
+      border-radius: 100px;
+      transition: 0.3s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      height: 27px; width: 27px;
+      left: 2px; top: 2px;
+      background: white;
+      border-radius: 50%;
+      transition: 0.3s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+    .toggle input:checked + .toggle-slider { background: var(--accent); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+    /* reps sub-rows */
+    #reps-container .rep-row {
+      display: flex;
+      align-items: center;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      gap: 10px;
+    }
+    #reps-container .rep-row:last-child { border-bottom: none; }
+    #reps-container .rep-label {
+      font-size: 14px;
+      color: var(--text2);
+      flex: 0 0 60px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="navbar">
+  <h1>💪 Gym Log</h1>
+  <span id="today-display" style="font-size:13px;color:var(--text2)"></span>
+</nav>
+
+<!-- PAGES -->
+<div id="page-log" class="page active">
+  <div class="card">
+    <div class="card-header">New Entry</div>
+    <div class="form-group">
+
+      <div class="form-row">
+        <label>Date</label>
+        <input type="date" id="entry-date" />
+      </div>
+
+      <div class="form-row">
+        <label>Exercise</label>
+        <select id="entry-exercise">
+          <optgroup label="Weights &amp; Barbells">
+            <option>Bench Press</option>
+            <option>Squat</option>
+            <option>Deadlift</option>
+            <option>Overhead Press</option>
+            <option>Barbell Row</option>
+            <option>Incline Bench Press</option>
+          </optgroup>
+          <optgroup label="Cable &amp; Pulldown">
+            <option>Lat Pulldown</option>
+            <option>Cable Row</option>
+            <option>Tricep Pushdown</option>
+            <option>Cable Fly</option>
+            <option>Face Pull</option>
+          </optgroup>
+          <optgroup label="Leg Machines">
+            <option>Leg Press</option>
+            <option>Leg Curl</option>
+            <option>Leg Extension</option>
+            <option>Hip Abductor</option>
+            <option>Calf Raise</option>
+          </optgroup>
+          <optgroup label="Dumbbell &amp; Bodyweight">
+            <option>Dumbbell Curl</option>
+            <option>Dumbbell Press</option>
+            <option>Dumbbell Lateral Raise</option>
+            <option>Pull-ups</option>
+            <option>Dips</option>
+            <option>Lunges</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label>Weight</label>
+        <div class="stepper">
+          <button onclick="stepWeight(-2.5)">−</button>
+          <span class="val" id="weight-val">60</span>
+          <button onclick="stepWeight(2.5)">+</button>
+        </div>
+        <span style="color:var(--text2);font-size:14px;margin-left:4px" id="weight-unit-label">kg</span>
+      </div>
+
+      <div class="form-row">
+        <label>Sets</label>
+        <div class="stepper">
+          <button onclick="stepSets(-1)">−</button>
+          <span class="val" id="sets-val">3</span>
+          <button onclick="stepSets(1)">+</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Reps per set -->
+    <div style="padding: 0 16px 8px">
+      <div class="card-header" style="padding:10px 0 6px">Reps per set</div>
+      <div id="reps-container"></div>
+    </div>
+
+    <div style="padding: 0 16px 16px">
+      <textarea id="entry-notes" placeholder="Notes (optional)" rows="2"
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);
+               border-radius:10px;color:var(--text);font-size:15px;font-family:inherit;
+               padding:10px;outline:none;resize:none;margin-top:4px"></textarea>
+      <button class="btn-primary" onclick="saveEntry()">Save Workout</button>
+    </div>
+  </div>
+</div>
+
+<div id="page-history" class="page">
+  <div id="history-list"></div>
+</div>
+
+<div id="page-stats" class="page">
+  <div class="stats-grid" id="stats-grid"></div>
+  <div class="card" id="top-exercises-card">
+    <div class="card-header">Top Exercises</div>
+    <div id="top-exercises-list"></div>
+  </div>
+</div>
+
+<div id="page-settings" class="page">
+  <div class="card">
+    <div class="card-header">Preferences</div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">Weight Unit</div>
+        <div class="settings-sub">kg or lbs</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button id="unit-kg" onclick="setUnit('kg')" style="padding:6px 14px;border-radius:8px;border:none;font-family:inherit;font-size:14px;cursor:pointer;background:var(--accent);color:#000;font-weight:700">kg</button>
+        <button id="unit-lbs" onclick="setUnit('lbs')" style="padding:6px 14px;border-radius:8px;border:none;font-family:inherit;font-size:14px;cursor:pointer;background:var(--surface2);color:var(--text)">lbs</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Custom Exercises</div>
+    <div id="custom-ex-list"></div>
+    <div style="padding:12px 16px;display:flex;gap:8px">
+      <input id="new-ex-input" placeholder="Add exercise…" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:15px;font-family:inherit;padding:10px;outline:none" />
+      <button onclick="addCustomExercise()" style="padding:10px 16px;border-radius:8px;border:none;background:var(--accent);color:#000;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit">Add</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Data</div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">Export Data</div>
+        <div class="settings-sub">Download as JSON</div>
+      </div>
+      <button onclick="exportData()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--surface2);color:var(--text);font-size:14px;cursor:pointer;font-family:inherit">Export</button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label" style="color:var(--danger)">Clear All Data</div>
+        <div class="settings-sub">Cannot be undone</div>
+      </div>
+      <button class="btn-danger" onclick="clearAllData()">Clear</button>
+    </div>
+  </div>
+
+  <p style="text-align:center;color:var(--text2);font-size:12px;padding:12px">
+    Data stored on this device only 🔒
+  </p>
+</div>
+
+<!-- TAB BAR -->
+<nav class="tabbar">
+  <button class="tab-btn active" onclick="showPage('log',this)">
+    <span class="icon">➕</span>Log
+  </button>
+  <button class="tab-btn" onclick="showPage('history',this)">
+    <span class="icon">📋</span>History
+  </button>
+  <button class="tab-btn" onclick="showPage('stats',this)">
+    <span class="icon">📊</span>Stats
+  </button>
+  <button class="tab-btn" onclick="showPage('settings',this)">
+    <span class="icon">⚙️</span>Settings
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── STATE ──
+  let entries = JSON.parse(localStorage.getItem('gymlog_entries') || '[]');
+  let settings = JSON.parse(localStorage.getItem('gymlog_settings') || '{"unit":"kg","customEx":[]}');
+  let currentWeight = 60;
+  let currentSets = 3;
+  let currentReps = [10, 10, 10];
+
+  // ── INIT ──
+  const dateInput = document.getElementById('entry-date');
+  const today = new Date().toISOString().slice(0,10);
+  dateInput.value = today;
+  document.getElementById('today-display').textContent = formatDate(today);
+
+  applyUnit();
+  renderReps();
+  renderCustomExList();
+
+  function formatDate(iso) {
+    const d = new Date(iso + 'T12:00:00');
+    return d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+  }
+
+  // ── PAGES ──
+  function showPage(name, btn) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    btn.classList.add('active');
+    if (name === 'history') renderHistory();
+    if (name === 'stats') renderStats();
+    if (name === 'settings') renderCustomExList();
+  }
+
+  // ── STEPPERS ──
+  function stepWeight(delta) {
+    currentWeight = Math.max(0, Math.round((currentWeight + delta) * 10) / 10);
+    document.getElementById('weight-val').textContent = currentWeight;
+  }
+  function stepSets(delta) {
+    currentSets = Math.max(1, Math.min(10, currentSets + delta));
+    document.getElementById('sets-val').textContent = currentSets;
+    // keep reps array in sync
+    while (currentReps.length < currentSets) currentReps.push(currentReps[currentReps.length-1] || 10);
+    currentReps = currentReps.slice(0, currentSets);
+    renderReps();
+  }
+  function stepRep(i, delta) {
+    currentReps[i] = Math.max(1, (currentReps[i] || 10) + delta);
+    renderReps();
+  }
+
+  function renderReps() {
+    const c = document.getElementById('reps-container');
+    c.innerHTML = '';
+    for (let i = 0; i < currentSets; i++) {
+      const row = document.createElement('div');
+      row.className = 'rep-row';
+      row.innerHTML = `
+        <span class="rep-label">Set ${i+1}</span>
+        <div class="stepper" style="flex:1;justify-content:flex-end">
+          <button onclick="stepRep(${i},-1)">−</button>
+          <span class="val" id="rep-val-${i}">${currentReps[i] || 10}</span>
+          <button onclick="stepRep(${i},1)">+</button>
+        </div>
+        <span style="color:var(--text2);font-size:13px;margin-left:4px">reps</span>
+      `;
+      c.appendChild(row);
+    }
+  }
+
+  // ── SAVE ──
+  function saveEntry() {
+    const entry = {
+      id: Date.now(),
+      date: dateInput.value,
+      exercise: document.getElementById('entry-exercise').value,
+      weight: currentWeight,
+      unit: settings.unit,
+      sets: currentSets,
+      reps: [...currentReps],
+      notes: document.getElementById('entry-notes').value.trim()
+    };
+    entries.unshift(entry);
+    localStorage.setItem('gymlog_entries', JSON.stringify(entries));
+    showToast('✅ Saved!');
+    document.getElementById('entry-notes').value = '';
+  }
+
+  // ── HISTORY ──
+  function renderHistory() {
+    const list = document.getElementById('history-list');
+    if (!entries.length) {
+      list.innerHTML = `<div class="empty-state"><div class="empty-icon">🏋️</div><p>No workouts yet.<br>Log your first one!</p></div>`;
+      return;
+    }
+    const grouped = {};
+    entries.forEach(e => {
+      if (!grouped[e.date]) grouped[e.date] = [];
+      grouped[e.date].push(e);
+    });
+    list.innerHTML = '';
+    Object.keys(grouped).sort((a,b) => b.localeCompare(a)).forEach(date => {
+      const grp = document.createElement('div');
+      grp.className = 'log-date-group';
+      grp.innerHTML = `<div class="log-date-label">${formatDate(date)}</div>`;
+      grouped[date].forEach(e => {
+        const repsStr = e.reps ? e.reps.join('/') : '-';
+        const item = document.createElement('div');
+        item.className = 'log-item';
+        item.innerHTML = `
+          <div class="log-item-info">
+            <div class="log-item-name">${e.exercise}</div>
+            <div class="log-item-meta">${e.sets} sets · ${repsStr} reps${e.notes ? ' · ' + e.notes : ''}</div>
+          </div>
+          <div class="log-item-badge">
+            <span class="badge-val">${e.weight}</span>
+            <span class="badge-unit">${e.unit || settings.unit}</span>
+          </div>
+          <button onclick="deleteEntry(${e.id})" style="background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer;padding:4px">🗑</button>
+        `;
+        grp.appendChild(item);
+      });
+      list.appendChild(grp);
+    });
+  }
+
+  function deleteEntry(id) {
+    if (!confirm('Delete this entry?')) return;
+    entries = entries.filter(e => e.id !== id);
+    localStorage.setItem('gymlog_entries', JSON.stringify(entries));
+    renderHistory();
+    showToast('🗑 Deleted');
+  }
+
+  // ── STATS ──
+  function renderStats() {
+    const grid = document.getElementById('stats-grid');
+    const totalSets = entries.reduce((s,e) => s + (e.sets||0), 0);
+    const workoutDays = new Set(entries.map(e => e.date)).size;
+    const maxWeight = entries.length ? Math.max(...entries.map(e => e.weight)) : 0;
+    const thisWeek = (() => {
+      const d = new Date(); d.setHours(0,0,0,0);
+      const mon = new Date(d); mon.setDate(d.getDate() - d.getDay() + 1);
+      return new Set(entries.filter(e => new Date(e.date+' 12:00') >= mon).map(e => e.date)).size;
+    })();
+    grid.innerHTML = `
+      <div class="stat-card"><div class="stat-val">${entries.length}</div><div class="stat-label">Total Entries</div></div>
+      <div class="stat-card"><div class="stat-val">${workoutDays}</div><div class="stat-label">Workout Days</div></div>
+      <div class="stat-card"><div class="stat-val">${totalSets}</div><div class="stat-label">Total Sets</div></div>
+      <div class="stat-card"><div class="stat-val">${thisWeek}</div><div class="stat-label">This Week</div></div>
+    `;
+    // top exercises
+    const exCount = {};
+    entries.forEach(e => { exCount[e.exercise] = (exCount[e.exercise]||0) + 1; });
+    const sorted = Object.entries(exCount).sort((a,b) => b[1]-a[1]).slice(0,8);
+    const exList = document.getElementById('top-exercises-list');
+    if (!sorted.length) { exList.innerHTML = '<div style="padding:16px;color:var(--text2);text-align:center">No data yet</div>'; return; }
+    exList.innerHTML = sorted.map(([name, count]) => `
+      <div class="exercise-stat">
+        <span class="ex-name">${name}</span>
+        <span class="ex-count">${count}×</span>
+      </div>
+    `).join('');
+  }
+
+  // ── SETTINGS ──
+  function setUnit(u) {
+    settings.unit = u;
+    saveSettings();
+    applyUnit();
+  }
+  function applyUnit() {
+    document.getElementById('unit-kg').style.background = settings.unit === 'kg' ? 'var(--accent)' : 'var(--surface2)';
+    document.getElementById('unit-kg').style.color = settings.unit === 'kg' ? '#000' : 'var(--text)';
+    document.getElementById('unit-lbs').style.background = settings.unit === 'lbs' ? 'var(--accent)' : 'var(--surface2)';
+    document.getElementById('unit-lbs').style.color = settings.unit === 'lbs' ? '#000' : 'var(--text)';
+    document.getElementById('weight-unit-label').textContent = settings.unit;
+  }
+
+  function addCustomExercise() {
+    const inp = document.getElementById('new-ex-input');
+    const val = inp.value.trim();
+    if (!val) return;
+    if (!settings.customEx) settings.customEx = [];
+    settings.customEx.push(val);
+    saveSettings();
+    inp.value = '';
+    addExToDropdown(val);
+    renderCustomExList();
+    showToast('Exercise added!');
+  }
+  function addExToDropdown(name) {
+    const sel = document.getElementById('entry-exercise');
+    let custom = sel.querySelector('optgroup[label="Custom"]');
+    if (!custom) {
+      custom = document.createElement('optgroup');
+      custom.label = 'Custom';
+      sel.appendChild(custom);
+    }
+    const opt = document.createElement('option');
+    opt.textContent = name;
+    custom.appendChild(opt);
+  }
+  function renderCustomExList() {
+    const c = document.getElementById('custom-ex-list');
+    if (!settings.customEx || !settings.customEx.length) {
+      c.innerHTML = '<div style="padding:12px 16px;color:var(--text2);font-size:14px">No custom exercises yet</div>';
+      return;
+    }
+    // also ensure they're in the dropdown
+    settings.customEx.forEach(ex => {
+      const sel = document.getElementById('entry-exercise');
+      if (![...sel.options].find(o => o.text === ex)) addExToDropdown(ex);
+    });
+    c.innerHTML = settings.customEx.map((ex, i) => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border)">
+        <span>${ex}</span>
+        <button onclick="removeCustomEx(${i})" style="background:none;border:none;color:var(--text2);font-size:16px;cursor:pointer">✕</button>
+      </div>
+    `).join('');
+  }
+  function removeCustomEx(i) {
+    settings.customEx.splice(i, 1);
+    saveSettings();
+    // rebuild dropdown custom group
+    const sel = document.getElementById('entry-exercise');
+    const cg = sel.querySelector('optgroup[label="Custom"]');
+    if (cg) cg.remove();
+    renderCustomExList();
+  }
+  function saveSettings() { localStorage.setItem('gymlog_settings', JSON.stringify(settings)); }
+
+  function exportData() {
+    const blob = new Blob([JSON.stringify(entries, null, 2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'gymlog-' + today + '.json';
+    a.click();
+  }
+  function clearAllData() {
+    if (!confirm('Delete ALL workout data? This cannot be undone.')) return;
+    entries = [];
+    localStorage.removeItem('gymlog_entries');
+    showToast('Data cleared');
+  }
+
+  // ── TOAST ──
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+</script>
+</body>
+</html>
